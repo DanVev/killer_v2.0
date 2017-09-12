@@ -11,11 +11,13 @@ import os
 
 from .managers import UserManager
 from .constants import KILLER_STATUS_CHOICES, ALIVE, DEAD, \
-                        GAME_STATUS_CHOICES, NEW
+    GAME_STATUS_CHOICES, NEW
+from visual import faceProcess
+
 
 def generate_code(n=6):
-    range_start = 10**(n-1)
-    range_end = (10**n)-1
+    range_start = 10 ** (n - 1)
+    range_end = (10 ** n) - 1
     return randint(range_start, range_end)
 
 
@@ -25,7 +27,7 @@ def directory_path(instance, filename):
 
 class User(AbstractBaseUser, PermissionsMixin):
     username = models.CharField(_('username'), max_length=40, blank=False, unique=True)
-    email = models.EmailField(_('email address'), unique=True ,blank=False)
+    email = models.EmailField(_('email address'), unique=True, blank=False)
     first_name = models.CharField(_('first name'), max_length=30, blank=False)
     last_name = models.CharField(_('last name'), max_length=30, blank=False)
     date_joined = models.DateTimeField(_('date joined'), auto_now_add=True)
@@ -103,10 +105,12 @@ class Game(models.Model):
     def get_game_killers(self):
         return self.killers
 
+
 def get_file_name(instance, filename):
     ext = filename.split('.')[-1]
     filename = "%s.%s" % (instance.personal_code, ext)
     return os.path.join('game/', filename)
+
 
 class Participants(models.Model):
     user = models.OneToOneField(User, null=True, blank=True)
@@ -114,11 +118,12 @@ class Participants(models.Model):
     first_name = models.CharField(max_length=30, blank=False)
     last_name = models.CharField(max_length=30, blank=False)
     group_number = models.CharField(max_length=30, blank=False)
-    photo = models.ImageField(upload_to=get_file_name)
     status = models.CharField(choices=KILLER_STATUS_CHOICES, max_length=5, default=ALIVE)
     personal_code = models.CharField(default=generate_code, blank=False, max_length=6, unique=True)
     victim_code = models.CharField(default=None, blank=True, null=True, max_length=6)
     kills = models.IntegerField(default=0)
+    photo = ParticipantPhoto(upload_to=get_file_name, blank=False, null=False, participantName=first_name,
+                             participantCode=personal_code)
 
     def get_game_name(self):
         return self.participants.game_name
@@ -136,3 +141,31 @@ class Participants(models.Model):
     def get_kills(self):
         return self.kills
 
+
+class ParticipantPhoto(models.Model):
+    def __init__(self, *args, **kwargs):
+        super(ParticipantPhoto, self).__init__(*args, **kwargs)
+        self.participantName = kwargs.get("participantName", default="unknown")
+        self.participantCode = kwargs.get("participantCode", default="0000-0000")
+
+    def save_form_data(self, instance, data):
+        from StringIO import StringIO
+        from django.core.files.uploadedfile import SimpleUploadedFile, UploadedFile
+
+        if data and isinstance(data, UploadedFile):
+            image = faceProcess.addBorder(data, self.participantName, self.participantCode)
+            new_image = StringIO()
+            image.save(new_image, 'JPEG', quality=85)
+            data = SimpleUploadedFile(data.name, new_image.getvalue(), data.content_type)
+
+            # Удаление старого файла
+            # previous = u'%s%s' % (settings.MEDIA_ROOT, instance.avatar)
+            # if os.path.isfile(previous):
+            #     os.remove(previous)
+            # -
+        super(ParticipantPhoto, self).save_form_data(instance, data)
+
+    def get_file_name(self, instance, filename):
+        ext = filename.split('.')[-1]
+        filename = "%s.%s" % (instance.personal_code, ext)
+        return os.path.join('game/', filename)

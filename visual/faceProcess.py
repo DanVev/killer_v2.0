@@ -2,11 +2,11 @@
 import numpy as np
 import cv2
 import os
-
+from PIL import Image
 BORDER_PLACE_SIZE = 1120
 BORDER_PADDING = 40
 TEXT_PADDING = 250
-
+COUNTER = 0
 def findFaces(imagePath, imageDebug=False):
     """
     find faces on photo given by input path and returns number of detected faces.
@@ -72,8 +72,10 @@ def addBorder(imagePath, name, code, dstPath="./playerImages/", imageDebug=False
     if os.path.exists(dstPath + name):
         os.remove(dstPath + "/" + name)
     os.rename("./" + name, dstPath + "/" + name)
+    return Image.open(dstPath + "/" + name)
 
 
 if __name__ == "__main__":
     print("Number of faces detected on test picture: {}".format(findFaces(r"./imageSources/test_image.jpg")))
-addBorder(r"./imageSources/test_image.jpg", "test_photo_result.jpg", "1234-5678", imageDebug=True)
+a = addBorder(r"./imageSources/test_image.jpg", "test_photo_result.jpg", "1234-5678", imageDebug=True)
+print ""
