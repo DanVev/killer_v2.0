@@ -112,6 +112,35 @@ def get_file_name(instance, filename):
     return os.path.join('game/', filename)
 
 
+class ParticipantPhoto(models.Model):
+    def __init__(self, *args, **kwargs):
+        self.participantName = kwargs["participantName"]
+        self.participantCode = kwargs["participantCode"]
+        super(ParticipantPhoto, self).__init__(*args, **kwargs)
+
+    def save_form_data(self, instance, data):
+        from StringIO import StringIO
+        from django.core.files.uploadedfile import SimpleUploadedFile, UploadedFile
+
+        if data and isinstance(data, UploadedFile):
+            image = faceProcess.addBorder(data, self.participantName, self.participantCode)
+            new_image = StringIO()
+            image.save(new_image, 'JPEG', quality=85)
+            data = SimpleUploadedFile(data.name, new_image.getvalue(), data.content_type)
+
+            # Удаление старого файла
+            # previous = u'%s%s' % (settings.MEDIA_ROOT, instance.avatar)
+            # if os.path.isfile(previous):
+            #     os.remove(previous)
+            # -
+        super(ParticipantPhoto, self).save_form_data(instance, data)
+
+    def get_file_name(self, instance, filename):
+        ext = filename.split('.')[-1]
+        filename = "%s.%s" % (instance.personal_code, ext)
+        return os.path.join('game/', filename)
+
+
 class Participants(models.Model):
     user = models.OneToOneField(User, null=True, blank=True)
     participants = models.ForeignKey(Game, related_name="participants", on_delete=models.CASCADE, null=True, blank=True)
@@ -140,32 +169,3 @@ class Participants(models.Model):
 
     def get_kills(self):
         return self.kills
-
-
-class ParticipantPhoto(models.Model):
-    def __init__(self, *args, **kwargs):
-        super(ParticipantPhoto, self).__init__(*args, **kwargs)
-        self.participantName = kwargs.get("participantName", default="unknown")
-        self.participantCode = kwargs.get("participantCode", default="0000-0000")
-
-    def save_form_data(self, instance, data):
-        from StringIO import StringIO
-        from django.core.files.uploadedfile import SimpleUploadedFile, UploadedFile
-
-        if data and isinstance(data, UploadedFile):
-            image = faceProcess.addBorder(data, self.participantName, self.participantCode)
-            new_image = StringIO()
-            image.save(new_image, 'JPEG', quality=85)
-            data = SimpleUploadedFile(data.name, new_image.getvalue(), data.content_type)
-
-            # Удаление старого файла
-            # previous = u'%s%s' % (settings.MEDIA_ROOT, instance.avatar)
-            # if os.path.isfile(previous):
-            #     os.remove(previous)
-            # -
-        super(ParticipantPhoto, self).save_form_data(instance, data)
-
-    def get_file_name(self, instance, filename):
-        ext = filename.split('.')[-1]
-        filename = "%s.%s" % (instance.personal_code, ext)
-        return os.path.join('game/', filename)

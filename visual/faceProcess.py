@@ -33,6 +33,9 @@ def findFaces(imagePath, imageDebug=False):
 
 
 def addBorder(imagePath, name, code, dstPath="./playerImages/", imageDebug=False):
+    if not os.path.exists(imagePath):
+        print(imagePath)
+        raise Exception("No such file in directory")
     img = cv2.imread(imagePath)
     borderImage = cv2.imread(r"./imageSources/ramka.png")
     if imageDebug:
@@ -77,5 +80,4 @@ def addBorder(imagePath, name, code, dstPath="./playerImages/", imageDebug=False
 
 if __name__ == "__main__":
     print("Number of faces detected on test picture: {}".format(findFaces(r"./imageSources/test_image.jpg")))
-a = addBorder(r"./imageSources/test_image.jpg", "test_photo_result.jpg", "1234-5678", imageDebug=True)
-print ""
+    a = addBorder(r"./imageSources/test_image.jpg", "test_photo_result.jpg", "1234-5678", imageDebug=True)
